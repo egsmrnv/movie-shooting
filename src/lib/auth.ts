@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import YandexProvider from "next-auth/providers/yandex";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/utils";
 
 type YandexProfile = Profile & {
   id?: string;
@@ -51,7 +50,6 @@ export const authOptions: NextAuthOptions = {
         create: { yandexId, email, displayName, avatarUrl }
       });
 
-      await bootstrapOwner(user.id, user.email);
       return true;
     },
     async jwt({ token, account, profile }) {
@@ -90,29 +88,4 @@ export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   return user;
-}
-
-async function bootstrapOwner(userId: string, email: string) {
-  const ownerEmail = process.env.OWNER_EMAIL;
-  if (!ownerEmail || ownerEmail.toLowerCase() !== email.toLowerCase()) return;
-
-  const studiosCount = await prisma.studio.count();
-  if (studiosCount > 0) return;
-
-  const title = process.env.DEFAULT_STUDIO_TITLE || "26 FPS";
-  const slug = slugify(title) || "26-fps";
-
-  await prisma.studio.create({
-    data: {
-      title,
-      slug,
-      members: {
-        create: {
-          userId,
-          status: "APPROVED",
-          accessLevel: "OWNER"
-        }
-      }
-    }
-  });
 }

@@ -32,7 +32,7 @@ export async function AppShell({
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold text-white">{studio.title}</span>
-              <span className="block truncate text-xs text-muted-foreground">26 FPS Schedule</span>
+              <span className="block truncate text-xs text-muted-foreground">Movie Shooting Schedule</span>
             </span>
           </Link>
           <div className="flex items-center gap-2">

@@ -1,10 +1,22 @@
-# 26 FPS Schedule
+# Movie Shooting Schedule
 
-Production-ready MVP приватного multi-tenant расписания для съёмочных групп и студий.
+MSS is a multi-tenant scheduling service for film crews, production teams, and studios.
 
-Стек: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui-style компоненты, Prisma, PostgreSQL, NextAuth/Yandex OAuth, Docker Compose, локальное файловое хранилище PDF.
+The product model is service-first: any administrator can sign in, create a studio, choose its public username, and invite employees to request access by that username. Each studio has isolated users, projects, vehicles, shifts, assignments, and call sheet PDFs.
 
-## Быстрый старт
+Stack: Next.js App Router, TypeScript, Tailwind CSS, Prisma, PostgreSQL, NextAuth/Yandex OAuth, Docker Compose, and local PDF storage.
+
+## Product Flow
+
+- An unauthenticated visitor chooses one of two paths: employee or administrator.
+- Employee path: sign in, enter the studio username, and send an access request.
+- Administrator path: sign in, create a studio with title and username, and become the OWNER of that studio.
+- OWNER and ADMIN users can approve or block employee requests and edit display names inside the studio.
+- Only the studio OWNER can change access levels and grant ADMIN rights.
+- A regular USER sees only their own shifts inside approved studios.
+- All studio data is scoped per studio.
+
+## Quick Start
 
 ```bash
 cp .env.example .env
@@ -15,179 +27,87 @@ npm run db:seed
 npm run dev
 ```
 
-После запуска приложение будет доступно на `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-Перед первым входом заполните в `.env` как минимум:
+Fill these values in `.env` before real sign-in:
 
 - `NEXTAUTH_SECRET`
 - `YANDEX_CLIENT_ID`
 - `YANDEX_CLIENT_SECRET`
-- `OWNER_EMAIL`
-- `DEFAULT_STUDIO_TITLE`
 
-В Yandex OAuth добавьте callback URL:
+Yandex OAuth callback URL for local development:
 
 ```text
 http://localhost:3000/api/auth/callback/yandex
 ```
 
-## Возможности MVP
-
-- Вход через Yandex OAuth.
-- Один глобальный `User`, много `Studio`.
-- Статус и доступ пользователя хранятся в `StudioMember`, отдельно для каждой студии.
-- Bootstrap первой студии через `OWNER_EMAIL` и `DEFAULT_STUDIO_TITLE`.
-- Создание студии, запрос доступа по slug, pending/blocked экраны.
-- OWNER/ADMIN админка студии: пользователи, проекты, проектная команда, машины, мастер-расписание, PDF вызывные.
-- USER личный кабинет: только собственные смены внутри текущей студии.
-- Read-only виды: “Проект × Даты”, “Сотрудники”, “Камервагены”, календарь проекта.
-- PDF хранятся в `UPLOAD_DIR/studios/{studioId}/call-sheets/{shiftId}.pdf` и отдаются только через защищённый route.
-- Модель `PushSubscription` и foundation для Web Push.
-- Docker production setup для VPS без зависимости от Vercel.
-
 ## Environment
 
-Скопируйте пример:
+Copy the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Заполните секреты вручную. Не коммитьте `.env`.
+Do not commit `.env`.
 
-Yandex OAuth callback URLs:
-
-- local: `http://localhost:3000/api/auth/callback/yandex`
-- production: `https://your-domain.ru/api/auth/callback/yandex`
-
-Для production compose также добавьте в `.env`:
+For production compose also set:
 
 ```env
 POSTGRES_PASSWORD="replace-with-strong-password"
-APP_DOMAIN="your-domain.ru"
-NEXTAUTH_URL="https://your-domain.ru"
+APP_DOMAIN="your-domain.com"
+NEXTAUTH_URL="https://your-domain.com"
 ```
 
-## Local development without Docker
+Production Yandex OAuth callback URL:
 
-1. Установите зависимости:
+```text
+https://your-domain.com/api/auth/callback/yandex
+```
+
+## Local Development
+
+PostgreSQL in Docker, app on the host:
 
 ```bash
-npm install
-```
-
-2. Создайте `.env` из `.env.example`.
-
-3. Запустите локальный PostgreSQL и укажите:
-
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/movie_shooting"
-UPLOAD_DIR="./uploads"
-```
-
-4. Выполните миграции:
-
-```bash
-npx prisma migrate dev
-```
-
-5. При желании заполните демо-данные:
-
-```bash
-npm run db:seed
-```
-
-6. Запустите dev server:
-
-```bash
-npm run dev
-```
-
-## Local development with Docker
-
-Вариант с Docker только для PostgreSQL:
-
-```bash
-cp .env.example .env
 docker compose up -d db
 npm install
 npx prisma migrate dev
 npm run dev
 ```
 
-Полный Docker-вариант:
+Full Docker setup:
 
 ```bash
-cp .env.example .env
 docker compose up -d --build
 docker compose exec app npx prisma migrate deploy
 ```
 
-Приложение будет доступно на `http://localhost:3000`.
-
-## Deploy to Beget VPS with Docker
-
-Основной production путь рассчитан на Docker Compose.
-
-1. Создайте Beget VPS.
-2. Установите Docker и Docker Compose plugin.
-3. Склонируйте репозиторий:
+## Production With Docker
 
 ```bash
 git clone https://github.com/egsmrnv/movie-shooting.git
 cd movie-shooting
-```
-
-4. Создайте production env:
-
-```bash
 cp .env.example .env
 nano .env
-```
-
-5. Вручную заполните `NEXTAUTH_SECRET`, `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`, `OWNER_EMAIL`, `POSTGRES_PASSWORD`, `APP_DOMAIN`, `NEXTAUTH_URL`, VAPID ключи при необходимости.
-
-6. В настройках Yandex OAuth добавьте callback:
-
-```text
-https://your-domain.ru/api/auth/callback/yandex
-```
-
-7. Запустите контейнеры:
-
-```bash
 docker compose -f docker-compose.prod.yml up -d --build
-```
-
-8. Выполните миграции:
-
-```bash
 docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
 ```
 
-9. Проверьте логи:
+Caddy serves the app over HTTPS for `APP_DOMAIN`.
+
+Uploaded PDFs are stored in the `uploads` Docker volume at `/app/uploads` inside the app container.
+
+Useful production commands:
 
 ```bash
 docker compose -f docker-compose.prod.yml logs -f app
-```
-
-10. Настройте DNS домена на IP VPS. Caddy из `docker-compose.prod.yml` автоматически выпустит HTTPS-сертификат для `APP_DOMAIN`.
-
-11. Uploaded PDF лежат в Docker volume `uploads`, внутри контейнера путь `/app/uploads`.
-
-12. Backup PostgreSQL:
-
-```bash
+docker compose -f docker-compose.prod.yml restart
 docker compose -f docker-compose.prod.yml exec db pg_dump -U user movie_shooting > backup.sql
-```
-
-13. Backup uploads volume:
-
-```bash
 docker run --rm -v movie-shooting_uploads:/data -v "$PWD":/backup alpine tar czf /backup/uploads-backup.tgz -C /data .
 ```
 
-14. Обновление приложения:
+Update:
 
 ```bash
 git pull
@@ -195,36 +115,21 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
 ```
 
-15. Перезапуск:
+## Production Without Docker
 
-```bash
-docker compose -f docker-compose.prod.yml restart
-```
-
-PostgreSQL в production compose не публикует порт `5432` наружу. Приложение доступно внутри Docker network на `app:3000`, наружу его отдаёт Caddy.
-
-## Deploy to Beget VPS without Docker
-
-Короткий fallback путь:
-
-1. Установите Node.js LTS, PostgreSQL, PM2, Nginx и Certbot.
-2. Создайте PostgreSQL базу и пользователя.
-3. Заполните `.env` с production `DATABASE_URL`, `NEXTAUTH_URL`, Yandex OAuth secrets и `UPLOAD_DIR`.
-4. Выполните:
+Fallback path:
 
 ```bash
 npm ci
 npx prisma generate
 npx prisma migrate deploy
 npm run build
-pm2 start npm --name 26-fps-schedule -- run start
+pm2 start npm --name movie-shooting-schedule -- run start
 ```
 
-5. Настройте Nginx reverse proxy на `127.0.0.1:3000` и HTTPS через Certbot.
+Run the app behind Nginx or another reverse proxy on `127.0.0.1:3000` and configure HTTPS.
 
-Docker остаётся рекомендуемым способом production-запуска.
-
-## Useful scripts
+## Useful Scripts
 
 ```bash
 npm run dev
@@ -239,12 +144,10 @@ npm run prisma:studio
 npm run db:seed
 ```
 
-## Security notes
+## Security Notes
 
-- `.env` и `uploads` исключены из git.
-- Все бизнес-запросы используют `studioId`.
-- Server actions и API routes заново проверяют membership текущего пользователя.
-- PENDING/BLOCKED пользователи не получают private data студии.
-- USER видит только смены, где он назначен.
-- ADMIN/OWNER ограничены своей студией.
-- PDF доступны только через защищённый route.
+- `.env` and `uploads` are excluded from git.
+- Server actions and API routes check studio membership on every protected operation.
+- PENDING and BLOCKED users cannot access private studio data.
+- ADMIN and OWNER users operate only inside the current studio.
+- Only OWNER can change user access levels.

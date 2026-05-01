@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireOwner, requireStudio } from "@/lib/access";
-import { canCreateStudios, shiftRoleLabels } from "@/lib/constants";
+import { shiftRoleLabels } from "@/lib/constants";
 import { notifyApprovedStudioUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { saveCallSheet } from "@/lib/uploads";
@@ -25,7 +25,8 @@ function values(formData: FormData, key: string) {
 }
 
 export async function createStudioAction(formData: FormData) {
-  const { user } = await requireStudioCreationUser();
+  const { requireUser } = await import("@/lib/auth");
+  const user = await requireUser();
   const parsed = z
     .object({
       title: text.min(2),
@@ -34,7 +35,7 @@ export async function createStudioAction(formData: FormData) {
     })
     .parse({
       title: value(formData, "title"),
-      slug: value(formData, "slug") || slugify(value(formData, "title")),
+      slug: value(formData, "username") || slugify(value(formData, "title")),
       description: value(formData, "description")
     });
 
@@ -53,21 +54,12 @@ export async function createStudioAction(formData: FormData) {
   redirect(`/app/${studio.slug}/dashboard`);
 }
 
-async function requireStudioCreationUser() {
-  const { requireUser } = await import("@/lib/auth");
-  const user = await requireUser();
-  if (canCreateStudios()) return { user };
-  const count = await prisma.studio.count();
-  if (count === 0 && process.env.OWNER_EMAIL?.toLowerCase() === user.email.toLowerCase()) return { user };
-  throw new Error("Создание студий отключено.");
-}
-
 export async function joinStudioAction(formData: FormData) {
   const { requireUser } = await import("@/lib/auth");
   const user = await requireUser();
-  const slug = slugSchema.parse(value(formData, "slug"));
+  const slug = slugSchema.parse(value(formData, "username"));
   const studio = await prisma.studio.findUnique({ where: { slug } });
-  if (!studio) throw new Error("Студия с таким slug не найдена.");
+  if (!studio) throw new Error("Студия с таким username не найдена.");
 
   const member = await prisma.studioMember.upsert({
     where: { studioId_userId: { studioId: studio.id, userId: user.id } },
@@ -102,7 +94,7 @@ export async function updateMemberAction(studioSlug: string, memberId: string, f
   }
   if (nextAccess !== target.accessLevel) {
     if (ctx.member.accessLevel !== "OWNER") throw new Error("Только владелец может менять уровень доступа.");
-    if (nextAccess === "OWNER") throw new Error("Назначение владельца в MVP выполняется вручную в базе.");
+    if (nextAccess === "OWNER") throw new Error("Передача владения пока выполняется вручную в базе.");
     if (target.accessLevel === "OWNER") {
       const owners = await prisma.studioMember.count({
         where: { studioId: ctx.studio.id, accessLevel: "OWNER", status: "APPROVED" }

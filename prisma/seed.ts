@@ -4,9 +4,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const studio = await prisma.studio.upsert({
-    where: { slug: "26-fps" },
-    update: { title: "26 FPS", description: "Демо-студия для MVP расписания" },
-    create: { slug: "26-fps", title: "26 FPS", description: "Демо-студия для MVP расписания" }
+    where: { slug: "movie-unit" },
+    update: { title: "Movie Unit", description: "Демо-студия для Movie Shooting Schedule" },
+    create: { slug: "movie-unit", title: "Movie Unit", description: "Демо-студия для Movie Shooting Schedule" }
   });
 
   await prisma.assignment.deleteMany({ where: { studioId: studio.id } });
@@ -121,7 +121,7 @@ async function main() {
     );
   }
 
-  console.log("Seed data created for studio 26 FPS.");
+  console.log("Seed data created for studio Movie Unit.");
 }
 
 main()

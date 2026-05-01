@@ -16,7 +16,7 @@ export function NotificationSettings({ vapidPublicKey }: { vapidPublicKey?: stri
       setMessage("Этот браузер не поддерживает web push.");
       return;
     }
-    setMessage("Регистрация service worker будет добавлена следующим шагом MVP.");
+    setMessage("Регистрация service worker будет добавлена следующим шагом.");
   }
 
   return (

@@ -48,7 +48,3 @@ export const singleProjectRoles: ProjectPersonRole[] = [
   "DIRECTOR",
   "SECOND_AD"
 ];
-
-export function canCreateStudios() {
-  return process.env.ALLOW_STUDIO_CREATION === "true";
-}

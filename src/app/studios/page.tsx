@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { canCreateStudios, userStatusLabels } from "@/lib/constants";
+import { userStatusLabels } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -32,14 +32,12 @@ export default async function StudiosPage() {
             <p className="mt-2 text-muted-foreground">Один аккаунт может работать в нескольких независимых студиях.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {canCreateStudios() ? (
-              <Button asChild>
-                <Link href="/studios/new">
-                  <Plus className="h-4 w-4" />
-                  Создать студию
-                </Link>
-              </Button>
-            ) : null}
+            <Button asChild>
+              <Link href="/studios/new">
+                <Plus className="h-4 w-4" />
+                Создать студию
+              </Link>
+            </Button>
             <Button asChild variant="secondary">
               <Link href="/studios/join">
                 <Search className="h-4 w-4" />
@@ -52,11 +50,7 @@ export default async function StudiosPage() {
         {memberships.length === 0 ? (
           <EmptyState
             title="Пока нет студий"
-            description={
-              canCreateStudios()
-                ? "Создайте новую студию или запросите доступ по slug у администратора."
-                : "Запросите доступ к существующей студии. Администратор подтвердит заявку."
-            }
+            description="Создайте новую студию как администратор или отправьте заявку в существующую студию по username."
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -65,7 +59,7 @@ export default async function StudiosPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <CardTitle>{membership.studio.title}</CardTitle>
-                    <CardDescription>{membership.studio.description || `/${membership.studio.slug}`}</CardDescription>
+                    <CardDescription>{membership.studio.description || `@${membership.studio.slug}`}</CardDescription>
                   </div>
                   <Badge>{userStatusLabels[membership.status]}</Badge>
                 </div>

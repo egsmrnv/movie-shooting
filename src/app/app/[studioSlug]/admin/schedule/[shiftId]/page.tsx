@@ -86,7 +86,7 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ st
 
         <Card>
           <CardTitle>История изменений</CardTitle>
-          <CardDescription>Полноценный audit log не входит в первый MVP. Здесь зарезервировано место под будущую историю.</CardDescription>
+          <CardDescription>Здесь зарезервировано место под будущую историю изменений.</CardDescription>
         </Card>
       </div>
     </AppShell>

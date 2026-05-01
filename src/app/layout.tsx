@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "26 FPS Schedule",
-  description: "Приватное расписание для съёмочных групп и студий."
+  title: "Movie Shooting Schedule",
+  description: "Сервис расписаний для съёмочных групп и студий."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
