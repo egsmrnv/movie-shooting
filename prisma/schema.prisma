@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  BLOCKED
+}
+
+enum AccessLevel {
+  OWNER
+  ADMIN
+  USER
+}
+
+enum ShiftRole {
+  FOCUS_PULLER
+  PLAYBACK
+  ASSISTANT
+  GAFFER
+  LIGHTING_TECHNICIAN
+}
+
+enum ProjectPersonRole {
+  DP
+  SECOND_CAMERA_OPERATOR
+  DIRECTOR
+  SECOND_AD
+}
+
+model Studio {
+  id          String          @id @default(cuid())
+  title       String
+  slug        String          @unique
+  description String?
+  logoUrl     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     StudioMember[]
+  projects    Project[]
+  vehicles    Vehicle[]
+  shifts      Shift[]
+  assignments Assignment[]
+  people      ProjectPerson[]
+}
+
+model User {
+  id                String             @id @default(cuid())
+  yandexId          String             @unique
+  email             String             @unique
+  displayName       String
+  avatarUrl         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  memberships       StudioMember[]
+  assignments       Assignment[]
+  projectPeople     ProjectPerson[]
+  pushSubscriptions PushSubscription[]
+}
+
+model StudioMember {
+  id          String      @id @default(cuid())
+  studioId    String
+  userId      String
+  status      UserStatus  @default(PENDING)
+  accessLevel AccessLevel @default(USER)
+  displayName String?
+  roleNote    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  studio      Studio      @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([studioId, status])
+  @@index([userId])
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  studioId    String
+  title       String
+  shortTitle  String?
+  emoji       String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  studio      Studio          @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  shifts      Shift[]
+  people      ProjectPerson[]
+
+  @@index([studioId, isActive])
+}
+
+model ProjectPerson {
+  id        String            @id @default(cuid())
+  studioId  String
+  projectId String
+  role      ProjectPersonRole
+  userId    String?
+  name      String?
+  note      String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  studio    Studio            @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([studioId, projectId])
+  @@index([studioId, userId])
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  studioId  String
+  title     String
+  plate     String?
+  emoji     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  studio    Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  shifts    Shift[]
+
+  @@index([studioId, isActive])
+}
+
+model Shift {
+  id            String       @id @default(cuid())
+  studioId      String
+  date          DateTime
+  projectId     String
+  dayType       String
+  note          String?
+  vehicleId     String?
+  callSheetPath String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  studio        Studio       @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  vehicle       Vehicle?     @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  assignments   Assignment[]
+
+  @@index([studioId, date])
+  @@index([studioId, projectId, date])
+  @@index([studioId, vehicleId, date])
+}
+
+model Assignment {
+  id        String    @id @default(cuid())
+  studioId  String
+  shiftId   String
+  userId    String
+  role      ShiftRole
+  note      String?
+  createdAt DateTime  @default(now())
+  studio    Studio    @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  shift     Shift     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studioId, shiftId])
+  @@index([studioId, userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
